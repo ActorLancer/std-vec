@@ -1,5 +1,6 @@
 use std::ptr;
 use std::mem;
+use std::ptr::NonNull;
 
 
 pub struct RawValIter<T> {
@@ -14,13 +15,13 @@ impl<T> RawValIter<T> {
     pub unsafe fn new(slice: &[T]) -> Self {
         RawValIter {
             start: slice.as_ptr(),
-            end: if slice.len() == 0 {
+            end: if mem::size_of::<T>() == 0 {
+                ((slice.as_ptr() as usize) + slice.len()) as *const T
+            } else if slice.len() == 0 {
                 slice.as_ptr()
             } else {
-                // 未分配内存，需要避免使用 offset，
-                // 因为那样会给 LLVM 的 GEP 传递错误的信息
                 slice.as_ptr().add(slice.len())
-            }
+            },
         }
     }
 }
@@ -31,17 +32,26 @@ impl<T> Iterator for RawValIter<T> {
         if self.start == self.end {
             None
         } else {
+            // *const T 强转为 usize，加 1，再转回 *const T，
+            // 得到了一个完全随机对齐的指针地址，它可能不满足 T 的对齐要求，
+            // ZST 的 ptr::read 实际是 no-op，不会真的访问内存
             unsafe {
-                let result = ptr::read(self.start);
-                self.start = self.start.add(1);
-                Some(result)
+                if mem::size_of::<T>() == 0 {
+                    self.start = (self.start as usize + 1) as *const T;
+                    Some(ptr::read(NonNull::<T>::dangling().as_ptr()))
+                } else {
+                    let old_ptr = self.start;
+                    self.start = self.start.offset(1);
+                    Some(ptr::read(old_ptr))
+                }
             }
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
+        let elem_size = mem::size_of::<T>();
         let len = (self.end as usize - self.start as usize)
-            / mem::size_of::<T>();
+            / if elem_size == 0 { 1 } else { elem_size };
 
         (len, Some(len))
     }
