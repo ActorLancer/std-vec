@@ -13,7 +13,6 @@ use std::ops::{Drop, Deref, DerefMut};
 use raw_val_iter::RawValIter;
 use raw_vec::RawVec;
 use drain::Drain;
-use sha2::digest::generic_array::iter;
 
 pub struct Vecx<T> {
     // ptr: NonNull<T>,    // 指向堆内存的指针
@@ -100,7 +99,7 @@ impl<T> Vecx<T> {
         self.len = 0;
 
         Drain {
-            iter: iter,
+            iter,
             vec: PhantomData,
         }
     }
