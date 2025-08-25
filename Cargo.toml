@@ -1,0 +1,17 @@
+[package]
+name = "test-demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rsa = "0.9"
+rand = "0.8"
+sha2 = "0.10"
+base64 = "0.21"
+# base64 = "0.22.1"
+# bloomfilter = "3.0.1"
+# rand = "0.9.1"
+# rsa = "0.9.8"
+# sha2 = "0.10.9"
+# # tokio = { version = "1.37", features = ["fs", "io-util", "macros"] }
+# tokio = { version = "1.37", features = ["fs", "io-util", "macros", "rt-multi-thread"] }
